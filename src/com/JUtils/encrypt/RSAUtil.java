@@ -23,12 +23,21 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * 作者：彭勃
+ * 时间：2016年09月07日
+ * 作用：RSA加密解密工具类
+ *
+ */
 public class RSAUtil {
 	private static final String AU = "RSA";
 	private static final int SIZE = 1024;
 	private static byte[] publicKey;
 	private static byte[] privateKey;
 
+	/**
+	 * 获取RSA秘钥对
+	 */
 	private static void getKeyPair() {
 		try {
 			KeyPairGenerator kpg = KeyPairGenerator.getInstance(AU);
