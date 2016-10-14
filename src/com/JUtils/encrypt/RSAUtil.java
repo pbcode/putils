@@ -47,10 +47,11 @@ public class RSAUtil {
 
 	private static Map<String, String> keyPair = new ConcurrentHashMap<>();
 
-	static {
+
+	public static Map<String, String> getKeyPair() {
+		// 得到密钥对生成器
+		KeyPairGenerator kpg;
 		try {
-			// 得到密钥对生成器
-			KeyPairGenerator kpg;
 			kpg = KeyPairGenerator.getInstance(Algorithm);
 			kpg.initialize(Key_Size);
 			// 得到密钥对
@@ -61,16 +62,13 @@ public class RSAUtil {
 			// 得到私钥
 			RSAPrivateKey keyPrivate = (RSAPrivateKey) kp.getPrivate();
 			privateKey = keyPrivate.getEncoded();
+			String str_pubicKey = Base64.getEncoder().encodeToString(publicKey);
+			String str_privateKey = Base64.getEncoder().encodeToString(privateKey);
+			keyPair.put(RSAUtil.uk, str_pubicKey);
+			keyPair.put(RSAUtil.pk, str_privateKey);
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
-	}
-
-	public static Map<String, String> getKeyPair() {
-		String str_pubicKey = Base64.getEncoder().encodeToString(publicKey);
-		String str_privateKey = Base64.getEncoder().encodeToString(privateKey);
-		keyPair.put(RSAUtil.uk, str_pubicKey);
-		keyPair.put(RSAUtil.pk, str_privateKey);
 		return keyPair;
 	}
 
