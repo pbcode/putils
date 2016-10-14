@@ -1,4 +1,6 @@
+package com.rgsc.pwcenter.util;
 
+import java.io.ByteArrayOutputStream;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -18,7 +20,7 @@ import javax.crypto.Cipher;
 /**
  * 修改时间：2010-12-1 下午06:14:38
  */
-public class T {
+public class RSAUtil {
 	// 非对称加密密钥算法
 	private static final String Algorithm = "RSA";
 
@@ -36,6 +38,12 @@ public class T {
 
 	// 私钥
 	private static byte[] privateKey = null;
+
+	// RSA最大加密明文大小
+	private static final int MAX_ENCRYPT_BLOCK = 117;
+
+	// RSA最大解密密文大小
+	private static final int MAX_DECRYPT_BLOCK = 128;
 
 	private static Map<String, String> keyPair = new ConcurrentHashMap<>();
 
@@ -61,8 +69,8 @@ public class T {
 	public static Map<String, String> getKeyPair() {
 		String str_pubicKey = Base64.getEncoder().encodeToString(publicKey);
 		String str_privateKey = Base64.getEncoder().encodeToString(privateKey);
-		keyPair.put(T.uk, str_pubicKey);
-		keyPair.put(T.pk, str_privateKey);
+		keyPair.put(RSAUtil.uk, str_pubicKey);
+		keyPair.put(RSAUtil.pk, str_privateKey);
 		return keyPair;
 	}
 
@@ -79,6 +87,7 @@ public class T {
 	 */
 	public static String encode(String publicKey, String encode_info) {
 		try {
+			byte[] byte_info = encode_info.getBytes();
 			byte[] byteArray_publicKey = Base64.getDecoder().decode(publicKey);
 			// 得到公钥
 			X509EncodedKeySpec keySpec = new X509EncodedKeySpec(byteArray_publicKey);
@@ -87,7 +96,23 @@ public class T {
 			// 加密数据
 			Cipher cp = Cipher.getInstance(Algorithm);
 			cp.init(Cipher.ENCRYPT_MODE, keyPublic);
-			return Base64.getEncoder().encodeToString(cp.doFinal(encode_info.getBytes()));
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			int offSet = 0;
+			int inputLen = byte_info.length;
+			byte[] cache = null;
+			int i = 0;
+			// 对数据分段解密
+			while (inputLen - offSet > 0) {
+				if (inputLen - offSet > MAX_ENCRYPT_BLOCK) {
+					cache = cp.doFinal(byte_info, offSet, MAX_ENCRYPT_BLOCK);
+				} else {
+					cache = cp.doFinal(byte_info, offSet, inputLen - offSet);
+				}
+				out.write(cache, 0, cache.length);
+				i++;
+				offSet = i * MAX_ENCRYPT_BLOCK;
+			}
+			return Base64.getEncoder().encodeToString(out.toByteArray());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -106,6 +131,7 @@ public class T {
 	 */
 	public static String decode(String privateKey, String decode_info) {
 		try {
+			byte[] byte_info = Base64.getDecoder().decode(decode_info);
 			byte[] byteArray_privateKey = Base64.getDecoder().decode(privateKey);
 			// 得到私钥
 			PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(byteArray_privateKey);
@@ -114,9 +140,25 @@ public class T {
 			// 解密数据
 			Cipher cp = Cipher.getInstance(Algorithm);
 			cp.init(Cipher.DECRYPT_MODE, keyPrivate);
-			byte[] arr = cp.doFinal(Base64.getDecoder().decode(decode_info));
+
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			int offSet = 0;
+			int inputLen = byte_info.length;
+			byte[] cache = null;
+			int i = 0;
+			// 对数据分段解密
+			while (inputLen - offSet > 0) {
+				if (inputLen - offSet > MAX_DECRYPT_BLOCK) {
+					cache = cp.doFinal(byte_info, offSet, MAX_DECRYPT_BLOCK);
+				} else {
+					cache = cp.doFinal(byte_info, offSet, inputLen - offSet);
+				}
+				out.write(cache, 0, cache.length);
+				i++;
+				offSet = i * MAX_DECRYPT_BLOCK;
+			}
 			// 得到解密后的字符串
-			return new String(arr);
+			return new String(out.toByteArray());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
